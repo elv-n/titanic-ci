@@ -1,0 +1,17 @@
+name: titanic_ci
+
+conda_env: conda.yaml
+
+entry_points:
+  main:
+    parameters:
+      n_estimators: {type: int, default: 400}
+      max_depth: {type: int, default: 10}
+      min_samples_split: {type: int, default: 2}
+      min_samples_leaf: {type: int, default: 1}
+    command: >-
+      python modelling.py
+      --n_estimators {n_estimators}
+      --max_depth {max_depth}
+      --min_samples_split {min_samples_split}
+      --min_samples_leaf {min_samples_leaf}

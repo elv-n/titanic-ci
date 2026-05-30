@@ -1,0 +1,15 @@
+# MLflow local tracking (dihasilkan saat CI berjalan)
+MLProject/mlruns/
+MLProject/mlartifacts/
+MLProject/artifacts_tmp/
+MLProject/run_id.txt
+MLProject/run_log.txt
+
+# Python
+__pycache__/
+*.pyc
+.env
+
+# OS
+.DS_Store
+Thumbs.db
