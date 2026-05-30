@@ -93,9 +93,17 @@ jobs:
           mlflow models build-docker \
             --model-uri "$MODEL_URI" \
             --name "$IMAGE_TAG"
-          docker push "$IMAGE_TAG"
-          echo "::notice::Pushed digest:"
-          docker images --digests "${DOCKERHUB_USERNAME}/${IMAGE_NAME}"
+          echo "::notice::Docker images:"
+          docker images | grep titanic
+          echo "::notice::Pushing with verbose output..."
+          docker push "$IMAGE_TAG" 2>&1 | tee /tmp/push_output.txt
+          PUSH_EXIT=$?
+          echo "::notice::Push exit code = ${PUSH_EXIT}"
+          if [ $PUSH_EXIT -ne 0 ]; then
+            echo "::error::Docker push FAILED"
+            cat /tmp/push_output.txt
+            exit 1
+          fi
           echo "Pushed: https://hub.docker.com/r/${DOCKERHUB_USERNAME}/${IMAGE_NAME}"
 
       # 8. Pastikan repository Docker Hub bersifat PUBLIC (agar dapat diakses
