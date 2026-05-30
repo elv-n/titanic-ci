@@ -87,9 +87,13 @@ jobs:
         run: |
           MODEL_URI="runs:/${RUN_ID}/model"
           IMAGE_TAG="${DOCKERHUB_USERNAME}/${IMAGE_NAME}:latest"
+          echo "::notice::Target namespace = ${DOCKERHUB_USERNAME}"
+          echo "::notice::Image tag        = ${IMAGE_TAG}"
           echo "Building image $IMAGE_TAG dari $MODEL_URI"
           mlflow models build-docker \
             --model-uri "$MODEL_URI" \
             --name "$IMAGE_TAG"
           docker push "$IMAGE_TAG"
+          echo "::notice::Pushed digest:"
+          docker images --digests "${DOCKERHUB_USERNAME}/${IMAGE_NAME}"
           echo "Pushed: https://hub.docker.com/r/${DOCKERHUB_USERNAME}/${IMAGE_NAME}"
