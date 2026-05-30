@@ -15,6 +15,8 @@ env:
   MLPROJECT_DIR: MLProject
   # Nama image Docker Hub (ganti sesuai akun Anda lewat repo variable bila perlu)
   IMAGE_NAME: titanic-ci
+  # Paksa JavaScript actions berjalan di Node.js 24 (Node 20 sudah deprecated).
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
   build-and-train:
