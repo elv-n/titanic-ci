@@ -7,7 +7,7 @@ Berbeda dengan `modelling_tuning.py` yang melakukan tracking online ke DagsHub,
 skrip ini dirancang agar dapat dijalankan otomatis oleh GitHub Actions melalui
 perintah `mlflow run`. Tracking dilakukan secara LOKAL (folder `mlruns/`) sehingga
 artefak model tersimpan di dalam repositori dan dapat:
-  - di-upload sebagai artefak workflow (GitHub Actions / Google Drive), dan
+  - di-upload sebagai artefak workflow GitHub Actions, dan
   - dipakai oleh `mlflow models build-docker` untuk membangun Docker Image.
 
 Entry point menerima parameter hyperparameter sehingga mudah dikonfigurasi dari
