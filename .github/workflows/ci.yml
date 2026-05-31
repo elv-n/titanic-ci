@@ -80,24 +80,4 @@ jobs:
           docker push "$IMAGE_TAG"
           echo "::notice::Push berhasil!"
           echo "Pushed: https://hub.docker.com/r/${DOCKERHUB_USERNAME}/${IMAGE_NAME}"
-
-      - name: Make Docker Hub repo public
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-        run: |
-          JWT=$(curl -s -H "Content-Type: application/json" \
-            -X POST -d "{\"username\":\"${DOCKERHUB_USERNAME}\",\"password\":\"${DOCKERHUB_TOKEN}\"}" \
-            https://hub.docker.com/v2/users/login/ | python -c "import sys,json;print(json.load(sys.stdin).get('token',''))")
-          if [ -z "$JWT" ]; then
-            echo "::warning::Gagal login ke Docker Hub API; lewati set-public."
-            exit 0
-          fi
-          CODE=$(curl -s -o /tmp/resp.json -w "%{http_code}" \
-            -X PATCH \
-            -H "Authorization: JWT ${JWT}" \
-            -H "Content-Type: application/json" \
-            -d '{"is_private": false}' \
-            "https://hub.docker.com/v2/repositories/${DOCKERHUB_USERNAME}/${IMAGE_NAME}/")
-          echo "::notice::Set-public HTTP ${CODE}"
-          cat /tmp/resp.json || true
+          echo "::notice::Catatan: pastikan repo di-set Public lewat Docker Hub UI sekali saja."
