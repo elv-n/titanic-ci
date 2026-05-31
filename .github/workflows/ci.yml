@@ -13,6 +13,7 @@ on:
 env:
   MLPROJECT_DIR: MLProject
   IMAGE_NAME: titanic-ci
+  PYTHON_VERSION: "3.12.7"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
@@ -21,16 +22,30 @@ jobs:
 
     defaults:
       run:
-        shell: bash -el {0}
+        shell: bash -l {0}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12.7"
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Check Env
+        run: |
+          echo "::group::Versi alat"
+          python --version
+          pip --version
+          docker --version
+          echo "::endgroup::"
+          echo "::group::Variabel kerja"
+          echo "MLPROJECT_DIR = ${MLPROJECT_DIR}"
+          echo "IMAGE_NAME    = ${IMAGE_NAME}"
+          echo "Working dir   = $(pwd)"
+          ls -la "${MLPROJECT_DIR}"
+          echo "::endgroup::"
 
       - name: Install dependencies
         run: |
@@ -42,14 +57,23 @@ jobs:
             numpy==1.26.4 \
             matplotlib==3.9.2
 
-      - name: Run MLflow Project
+      - name: Run mlflow project
+        working-directory: ${{ env.MLPROJECT_DIR }}
+        run: mlflow run . --env-manager=local
+
+      - name: Get latest MLflow run_id
         working-directory: ${{ env.MLPROJECT_DIR }}
         run: |
-          mlflow run . --env-manager=local
-          echo "RUN_ID=$(cat run_id.txt)" >> "$GITHUB_ENV"
-          echo "Trained run_id: $(cat run_id.txt)"
+          RUN_ID=$(cat run_id.txt)
+          echo "RUN_ID=${RUN_ID}" >> "$GITHUB_ENV"
+          echo "::notice::Latest MLflow run_id = ${RUN_ID}"
 
-      - name: Upload MLflow artifacts
+      - name: Install Python dependencies
+        # Beberapa modul tambahan yang dibutuhkan saat `mlflow build-docker`
+        # menyiapkan model (mis. virtualenv untuk env-manager=local).
+        run: pip install virtualenv
+
+      - name: Upload MLflow artifacts to GitHub
         uses: actions/upload-artifact@v4
         with:
           name: mlflow-artifacts
@@ -58,29 +82,38 @@ jobs:
             ${{ env.MLPROJECT_DIR }}/run_id.txt
           retention-days: 30
 
+      - name: Build Docker Model
+        working-directory: ${{ env.MLPROJECT_DIR }}
+        run: |
+          set -e
+          MODEL_URI="runs:/${RUN_ID}/model"
+          echo "::notice::Building docker image dari ${MODEL_URI}"
+          mlflow models build-docker \
+            --model-uri "${MODEL_URI}" \
+            --name "${IMAGE_NAME}" \
+            --env-manager local
+          docker images "${IMAGE_NAME}"
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build & push Docker image (mlflow build-docker)
-        working-directory: ${{ env.MLPROJECT_DIR }}
+      - name: Tag Docker Image
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
           set -e
-          MODEL_URI="runs:/${RUN_ID}/model"
           IMAGE_TAG="${DOCKERHUB_USERNAME}/${IMAGE_NAME}:latest"
-          echo "::notice::Image tag = ${IMAGE_TAG}"
-          echo "Building image $IMAGE_TAG dari $MODEL_URI"
-          mlflow models build-docker \
-            --model-uri "$MODEL_URI" \
-            --name "$IMAGE_TAG" \
-            --env-manager local
-          echo "::notice::Local images:"
+          docker tag "${IMAGE_NAME}" "${IMAGE_TAG}"
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_ENV"
+          echo "::notice::Tagged ${IMAGE_NAME} -> ${IMAGE_TAG}"
           docker images "${DOCKERHUB_USERNAME}/${IMAGE_NAME}"
-          echo "Pushing..."
-          docker push "$IMAGE_TAG"
-          echo "::notice::Push BERHASIL ke ${IMAGE_TAG}"
-          echo "Pushed: https://hub.docker.com/r/${DOCKERHUB_USERNAME}/${IMAGE_NAME}"
+
+      - name: Push Docker Image
+        run: |
+          set -e
+          echo "::notice::Pushing ${IMAGE_TAG}"
+          docker push "${IMAGE_TAG}"
+          echo "::notice::Pushed: https://hub.docker.com/r/${{ secrets.DOCKERHUB_USERNAME }}/${IMAGE_NAME}"
