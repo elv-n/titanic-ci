@@ -21,7 +21,7 @@ jobs:
 
     defaults:
       run:
-        shell: bash -l {0}
+        shell: bash -el {0}
 
     steps:
       - name: Checkout repository
@@ -36,7 +36,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install \
-            mlflow==2.19.0 \
+            "mlflow>=2.20.0,<3.0" \
             scikit-learn==1.5.2 \
             pandas==2.2.3 \
             numpy==1.26.4 \
@@ -69,15 +69,18 @@ jobs:
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         run: |
+          set -e
           MODEL_URI="runs:/${RUN_ID}/model"
           IMAGE_TAG="${DOCKERHUB_USERNAME}/${IMAGE_NAME}:latest"
           echo "::notice::Image tag = ${IMAGE_TAG}"
           echo "Building image $IMAGE_TAG dari $MODEL_URI"
           mlflow models build-docker \
             --model-uri "$MODEL_URI" \
-            --name "$IMAGE_TAG"
+            --name "$IMAGE_TAG" \
+            --env-manager local
+          echo "::notice::Local images:"
+          docker images "${DOCKERHUB_USERNAME}/${IMAGE_NAME}"
           echo "Pushing..."
           docker push "$IMAGE_TAG"
-          echo "::notice::Push berhasil!"
+          echo "::notice::Push BERHASIL ke ${IMAGE_TAG}"
           echo "Pushed: https://hub.docker.com/r/${DOCKERHUB_USERNAME}/${IMAGE_NAME}"
-          echo "::notice::Catatan: pastikan repo di-set Public lewat Docker Hub UI sekali saja."
