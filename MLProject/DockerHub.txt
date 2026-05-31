@@ -1,17 +1,2 @@
-Tautan ke Docker Hub
-====================
-
-Docker Image hasil `mlflow models build-docker` di-push otomatis oleh GitHub
-Actions ke Docker Hub pada step "Build & push Docker image".
-
 Tautan image:
     https://hub.docker.com/r/elivkurniawan/titanic-ci
-
-Cara menjalankan image (serve model di port 5001):
-    docker pull elivkurniawan/titanic-ci:latest
-    docker run -p 5001:8080 elivkurniawan/titanic-ci:latest
-
-Contoh request inferensi:
-    curl -X POST http://localhost:5001/invocations \
-      -H "Content-Type: application/json" \
-      -d '{"dataframe_split": {"columns": ["Pclass","Sex","Age","SibSp","Parch","Fare","FamilySize","IsAlone","Embarked_Q","Embarked_S","Title_Miss","Title_Mr","Title_Mrs","Title_Rare"], "data": [[3,0,-0.1,-0.47,-0.47,1.58,-0.56,1,0,1,0,1,0,0]]}}'
